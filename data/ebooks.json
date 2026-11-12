@@ -1,20 +1,5 @@
 [
     {
-        "id": "EB-001",
-        "title": "PHP 8 Objects, Patterns, and Practice",
-        "author": "Matt Zandstra",
-        "publisher": "Apress",
-        "category": "Programming",
-        "isbn": "978-1484267905",
-        "publishedYear": 2021,
-        "pages": 824,
-        "language": "English",
-        "format": "PDF",
-        "description": "Panduan mendalam arsitektur OOP modern, design patterns, dan fitur terbaru PHP 8.",
-        "totalCopies": 5,
-        "availableCopies": 4
-    },
-    {
         "id": "EB-002",
         "title": "Clean Code: A Handbook of Agile Software Craftsmanship",
         "author": "Robert C. Martin",
@@ -47,7 +32,7 @@
     {
         "id": "EB-004",
         "title": "Designing Data-Intensive Applications",
-        "author": "Martin Kleppmann",
+        "author": "Brillian Daniar",
         "publisher": "O'Reilly Media",
         "category": "Distributed Systems",
         "isbn": "978-1449373320",
@@ -58,5 +43,20 @@
         "description": "Konsep skalabilitas aplikasi web, replikasi data, dan konsistensi sistem terdistribusi.",
         "totalCopies": 3,
         "availableCopies": 0
+    },
+    {
+        "id": "EBK-001",
+        "title": "BABAJI",
+        "author": "RUDY",
+        "publisher": "wddw",
+        "category": "wdww",
+        "isbn": "2133123",
+        "publishedYear": 1999,
+        "pages": 1233,
+        "language": "sake",
+        "format": "PDF",
+        "description": "gatau buku apa ini",
+        "totalCopies": 303,
+        "availableCopies": 303
     }
 ]
