@@ -82,7 +82,7 @@ class AuthService
                 ];
 
                 $redirect = ($user['role'] === 'admin')
-                    ? 'index.php?page=admin/dashboard'
+                    ? 'index.php?page=admin-dashboard'
                     : 'index.php?page=dashboard';
 
                 return [
