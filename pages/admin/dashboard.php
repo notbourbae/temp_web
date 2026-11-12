@@ -19,6 +19,9 @@ function readAdminDashboardJson($filePath)
 
 $ebooks = readAdminDashboardJson(__DIR__ . '/../../data/ebooks.json');
 $transactions = readAdminDashboardJson(__DIR__ . '/../../data/transactions.json');
+require_once __DIR__ . '/../../src/autoload.php';
+$memberService = new \App\Services\MemberService();
+$totalMembers = count($memberService->getAllMembers());
 
 // Statistik e-book
 $totalBooks = count($ebooks);
@@ -51,9 +54,6 @@ foreach ($transactions as $transaction) {
         $returnedTransactions++;
     }
 }
-
-// Member belum memiliki sumber data JSON
-$totalMembers = 0;
 
 // Pemetaan e-book berdasarkan ID
 $ebookMap = [];
