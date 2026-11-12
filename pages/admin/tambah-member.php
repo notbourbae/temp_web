@@ -1,8 +1,30 @@
 
+<?php
+require_once __DIR__ . '/../../src/autoload.php';
+
+$memberService = new \App\Services\MemberService();
+$memberId = trim($_GET['id'] ?? '');
+$member = $memberId === '' ? null : $memberService->getById($memberId);
+$isEditing = $memberId !== '';
+
+function memberFormValue(string $key, ?array $member): string
+{
+    return htmlspecialchars((string) ($member[$key] ?? ''), ENT_QUOTES, 'UTF-8');
+}
+?>
+
+<?php if ($isEditing && (!$member || ($member['role'] ?? '') !== 'member')): ?>
+    <section class="content-card">
+        <h1>Member tidak ditemukan</h1>
+        <a href="index.php?page=kelola-member" class="btn-primary">Kembali ke daftar</a>
+    </section>
+    <?php return; ?>
+<?php endif; ?>
+
 <section class="page-header">
     <div>
-        <h1>Tambah Member</h1>
-        <p>Tambahkan anggota baru ke dalam perpustakaan.</p>
+        <h1><?= $isEditing ? 'Edit Member' : 'Tambah Member' ?></h1>
+        <p><?= $isEditing ? 'Perbarui informasi member.' : 'Tambahkan anggota baru ke dalam perpustakaan.' ?></p>
     </div>
 </section>
 
@@ -10,12 +32,16 @@
 
     <div class="content-card-header">
         <div>
-            <h2>Informasi Member</h2>
+            <h2><?= $isEditing ? 'Perbarui Informasi Member' : 'Informasi Member' ?></h2>
             <p>Lengkapi informasi anggota di bawah ini.</p>
         </div>
     </div>
 
-    <form id="memberForm" class="member-form">
+    <form action="process.php" method="POST" class="member-form">
+        <input type="hidden" name="action" value="<?= $isEditing ? 'update_member' : 'create_member' ?>">
+        <?php if ($isEditing): ?>
+            <input type="hidden" name="id" value="<?= htmlspecialchars($memberId, ENT_QUOTES, 'UTF-8') ?>">
+        <?php endif; ?>
 
         <div class="member-form-grid">
 
@@ -26,6 +52,7 @@
                     id="memberName"
                     name="name"
                     placeholder="Masukkan nama lengkap"
+                    value="<?= memberFormValue('name', $member) ?>"
                     required
                 >
             </div>
@@ -37,45 +64,36 @@
                     id="memberEmail"
                     name="email"
                     placeholder="contoh@email.com"
+                    value="<?= memberFormValue('email', $member) ?>"
                     required
                 >
             </div>
 
             <div class="form-group">
-                <label for="memberPassword">Password</label>
+                <label for="memberPassword"><?= $isEditing ? 'Password baru (opsional)' : 'Password' ?></label>
                 <input
                     type="password"
                     id="memberPassword"
                     name="password"
-                    placeholder="Masukkan password"
+                    placeholder="<?= $isEditing ? 'Kosongkan jika tidak ingin mengganti' : 'Masukkan password' ?>"
                     minlength="6"
-                    required
+                    <?= $isEditing ? '' : 'required' ?>
                 >
             </div>
 
             <div class="form-group">
-                <label for="confirmPassword">Konfirmasi Password</label>
+                <label for="confirmPassword">Konfirmasi <?= $isEditing ? 'Password Baru' : 'Password' ?></label>
                 <input
                     type="password"
                     id="confirmPassword"
-                    name="confirmPassword"
+                    name="confirm_password"
                     placeholder="Ulangi password"
                     minlength="6"
-                    required
+                    <?= $isEditing ? '' : 'required' ?>
                 >
             </div>
 
-            <div class="form-group">
-                <label for="memberRole">Role</label>
-                <select id="memberRole" name="role" required>
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                </select>
-            </div>
-
         </div>
-
-        <div id="memberFormMessage" class="member-form-message"></div>
 
         <div class="member-form-actions">
             <a href="index.php?page=kelola-member" class="btn-reset">
@@ -83,7 +101,7 @@
             </a>
 
             <button type="submit" class="btn-primary">
-                Simpan Member
+                <?= $isEditing ? 'Simpan Perubahan' : 'Simpan Member' ?>
             </button>
         </div>
 
