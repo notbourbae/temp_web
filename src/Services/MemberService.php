@@ -42,7 +42,7 @@ class MemberService
         return null;
     }
 
-    public function createMember(array $data): array
+    public function createMember(array $data, string $confirmPassword = ''): array
     {
         $name     = trim($data['name'] ?? '');
         $email    = strtolower(trim($data['email'] ?? ''));
@@ -58,6 +58,10 @@ class MemberService
 
         if (strlen($password) < 6) {
             return ['success' => false, 'message' => 'Password minimal 6 karakter.'];
+        }
+
+        if ($password !== $confirmPassword) {
+            return ['success' => false, 'message' => 'Konfirmasi password tidak cocok.'];
         }
 
         $users = JsonStorage::read($this->usersFile);
@@ -81,7 +85,7 @@ class MemberService
         return ['success' => true, 'message' => 'Member baru berhasil ditambahkan.', 'data' => $member->toArray()];
     }
 
-    public function updateMember(string $id, array $data): array
+    public function updateMember(string $id, array $data, string $confirmPassword = ''): array
     {
         $name     = trim($data['name'] ?? '');
         $email    = strtolower(trim($data['email'] ?? ''));
@@ -110,6 +114,9 @@ class MemberService
                 if ($password !== '') {
                     if (strlen($password) < 6) {
                         return ['success' => false, 'message' => 'Password baru minimal 6 karakter.'];
+                    }
+                    if ($password !== $confirmPassword) {
+                        return ['success' => false, 'message' => 'Konfirmasi password tidak cocok.'];
                     }
                     $user['password'] = password_hash($password, PASSWORD_DEFAULT);
                 }
