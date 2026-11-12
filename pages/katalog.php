@@ -11,7 +11,7 @@
 // 1. MEMBACA DATA JSON
 // ==========================================
 
-$ebookFile = __DIR__ . '/../../data/ebooks.json';
+$ebookFile = __DIR__ . '/../data/ebooks.json';
 
 $books = [];
 
