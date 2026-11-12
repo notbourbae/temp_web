@@ -1,27 +1,12 @@
 
 <?php
-// Data member akan dihubungkan dengan Backend.
-// Untuk sementara, gunakan array kosong agar tidak menampilkan data dummy.
-$members = [];
+require_once __DIR__ . '/../../src/autoload.php';
 
 $search = trim($_GET['search'] ?? '');
-$roleFilter = trim($_GET['role'] ?? '');
-
-$filteredMembers = array_filter($members, function ($member) use ($search, $roleFilter) {
-    $name = $member['name'] ?? '';
-    $email = $member['email'] ?? '';
-    $role = $member['role'] ?? '';
-
-    $matchesSearch = $search === '' ||
-        stripos($name, $search) !== false ||
-        stripos($email, $search) !== false;
-
-    $matchesRole = $roleFilter === '' || $role === $roleFilter;
-
-    return $matchesSearch && $matchesRole;
-});
-
-$filteredMembers = array_values($filteredMembers);
+$memberService = new \App\Services\MemberService();
+$members = $memberService->getAllMembers($search);
+$filteredMembers = $members;
+$totalMembers = count($memberService->getAllMembers());
 ?>
 
 <section class="page-header admin-member-header">
@@ -42,7 +27,7 @@ $filteredMembers = array_values($filteredMembers);
             <h2>Daftar Member</h2>
             <p>
                 Menampilkan <?= count($filteredMembers) ?>
-                dari <?= count($members) ?> member.
+                dari <?= $totalMembers ?> member.
             </p>
         </div>
     </div>
@@ -60,16 +45,6 @@ $filteredMembers = array_values($filteredMembers);
             >
         </div>
 
-        <select name="role" class="admin-member-filter">
-            <option value="">Semua Role</option>
-            <option value="member" <?= $roleFilter === 'member' ? 'selected' : '' ?>>
-                Member
-            </option>
-            <option value="admin" <?= $roleFilter === 'admin' ? 'selected' : '' ?>>
-                Admin
-            </option>
-        </select>
-
         <button type="submit" class="btn-primary">Cari</button>
 
         <a href="index.php?page=kelola-member" class="btn-reset">
@@ -82,10 +57,9 @@ $filteredMembers = array_values($filteredMembers);
 
         <div class="empty-state">
             <div class="empty-state-icon">👥</div>
-            <h3>Belum Ada Data Member</h3>
+            <h3><?= $search === '' ? 'Belum Ada Data Member' : 'Member Tidak Ditemukan' ?></h3>
             <p>
-                Data anggota perpustakaan akan ditampilkan setelah
-                terhubung dengan Backend.
+                <?= $search === '' ? 'Data anggota akan muncul setelah ditambahkan.' : 'Coba kata kunci pencarian lainnya.' ?>
             </p>
         </div>
 
@@ -133,13 +107,12 @@ $filteredMembers = array_values($filteredMembers);
 
                             <td>
                                 <div class="admin-member-actions">
-                                    <button type="button" class="btn-member-edit" disabled>
-                                        Edit
-                                    </button>
-
-                                    <button type="button" class="btn-member-delete" disabled>
-                                        Hapus
-                                    </button>
+                                    <a class="btn-member-edit" href="index.php?page=edit-member&id=<?= urlencode((string) ($member['id'] ?? '')) ?>">Edit</a>
+                                    <form action="process.php" method="POST" onsubmit="return confirm('Hapus member ini?')">
+                                        <input type="hidden" name="action" value="delete_member">
+                                        <input type="hidden" name="id" value="<?= htmlspecialchars((string) ($member['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                        <button type="submit" class="btn-member-delete">Hapus</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
