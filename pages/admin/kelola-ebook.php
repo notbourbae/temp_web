@@ -1,23 +1,9 @@
 
 <?php
-function readKelolaEbookJson($filePath)
-{
-    if (!file_exists($filePath)) {
-        return [];
-    }
+require_once __DIR__ . '/../../src/autoload.php';
 
-    $content = file_get_contents($filePath);
-
-    if ($content === false || trim($content) === '') {
-        return [];
-    }
-
-    $data = json_decode($content, true);
-
-    return is_array($data) ? $data : [];
-}
-
-$ebooks = readKelolaEbookJson(__DIR__ . '/../../data/ebooks.json');
+$ebookService = new \App\Services\EbookService();
+$ebooks = $ebookService->getAll();
 
 $search = trim($_GET['search'] ?? '');
 $categoryFilter = trim($_GET['category'] ?? '');
@@ -194,6 +180,17 @@ $filteredEbooks = array_values($filteredEbooks);
                                     >
                                         Detail
                                     </a>
+                                    <a
+                                        href="index.php?page=edit-ebook&id=<?= urlencode((string) ($ebook['id'] ?? '')) ?>"
+                                        class="btn-action"
+                                    >
+                                        Edit
+                                    </a>
+                                    <form action="process.php" method="POST" onsubmit="return confirm('Hapus e-book ini?')">
+                                        <input type="hidden" name="action" value="delete_ebook">
+                                        <input type="hidden" name="id" value="<?= htmlspecialchars((string) ($ebook['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                        <button type="submit" class="btn-action btn-member-delete">Hapus</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
