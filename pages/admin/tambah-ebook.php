@@ -1,20 +1,32 @@
 
 <?php
-$errors = $_SESSION['ebook_errors'] ?? [];
-$oldInput = $_SESSION['ebook_old_input'] ?? [];
+require_once __DIR__ . '/../../src/autoload.php';
 
-unset($_SESSION['ebook_errors'], $_SESSION['ebook_old_input']);
+$ebookService = new \App\Services\EbookService();
+$ebookId = trim($_GET['id'] ?? '');
+$ebook = $ebookId === '' ? null : $ebookService->getById($ebookId);
+$isEditing = $ebookId !== '';
+$formData = array_merge($ebook ?? [], $_SESSION['ebook_old_input'] ?? []);
+unset($_SESSION['ebook_old_input']);
 
-function ebookFormValue($key, $oldInput)
+function ebookFormValue(string $key, array $formData): string
 {
-    return htmlspecialchars($oldInput[$key] ?? '', ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string) ($formData[$key] ?? ''), ENT_QUOTES, 'UTF-8');
 }
 ?>
 
+<?php if ($isEditing && $ebook === null): ?>
+    <section class="content-card">
+        <h1>E-Book tidak ditemukan</h1>
+        <a href="index.php?page=kelola-ebook" class="btn-primary">Kembali ke daftar</a>
+    </section>
+    <?php return; ?>
+<?php endif; ?>
+
 <section class="page-header">
     <div>
-        <h1>Tambah E-Book</h1>
-        <p>Masukkan informasi e-book baru ke koleksi perpustakaan.</p>
+        <h1><?= $isEditing ? 'Edit E-Book' : 'Tambah E-Book' ?></h1>
+        <p><?= $isEditing ? 'Perbarui informasi e-book.' : 'Masukkan informasi e-book baru ke koleksi perpustakaan.' ?></p>
     </div>
 
     <a href="index.php?page=kelola-ebook" class="btn-reset">
@@ -26,25 +38,17 @@ function ebookFormValue($key, $oldInput)
 
     <div class="content-card-header">
         <div>
-            <h2>Informasi E-Book</h2>
+            <h2><?= $isEditing ? 'Perbarui Informasi E-Book' : 'Informasi E-Book' ?></h2>
             <p>Lengkapi seluruh informasi buku berikut.</p>
         </div>
     </div>
 
-    <?php if (!empty($errors)): ?>
-        <div class="form-error-message">
-            <strong>Periksa kembali formulir:</strong>
-            <ul>
-                <?php foreach ($errors as $error): ?>
-                    <li><?= htmlspecialchars($error) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    <?php endif; ?>
-
     <form action="process.php" method="POST" class="ebook-form">
 
-        <input type="hidden" name="action" value="add-ebook">
+        <input type="hidden" name="action" value="<?= $isEditing ? 'update_ebook' : 'create_ebook' ?>">
+        <?php if ($isEditing): ?>
+            <input type="hidden" name="id" value="<?= htmlspecialchars($ebookId, ENT_QUOTES, 'UTF-8') ?>">
+        <?php endif; ?>
 
         <div class="ebook-form-grid">
 
@@ -54,7 +58,7 @@ function ebookFormValue($key, $oldInput)
                     type="text"
                     id="title"
                     name="title"
-                    value="<?= ebookFormValue('title', $oldInput) ?>"
+                    value="<?= ebookFormValue('title', $formData) ?>"
                     required
                 >
             </div>
@@ -65,7 +69,7 @@ function ebookFormValue($key, $oldInput)
                     type="text"
                     id="author"
                     name="author"
-                    value="<?= ebookFormValue('author', $oldInput) ?>"
+                    value="<?= ebookFormValue('author', $formData) ?>"
                     required
                 >
             </div>
@@ -76,7 +80,7 @@ function ebookFormValue($key, $oldInput)
                     type="text"
                     id="publisher"
                     name="publisher"
-                    value="<?= ebookFormValue('publisher', $oldInput) ?>"
+                    value="<?= ebookFormValue('publisher', $formData) ?>"
                     required
                 >
             </div>
@@ -87,7 +91,7 @@ function ebookFormValue($key, $oldInput)
                     type="text"
                     id="category"
                     name="category"
-                    value="<?= ebookFormValue('category', $oldInput) ?>"
+                    value="<?= ebookFormValue('category', $formData) ?>"
                     required
                 >
             </div>
@@ -98,7 +102,7 @@ function ebookFormValue($key, $oldInput)
                     type="text"
                     id="isbn"
                     name="isbn"
-                    value="<?= ebookFormValue('isbn', $oldInput) ?>"
+                    value="<?= ebookFormValue('isbn', $formData) ?>"
                     required
                 >
             </div>
@@ -111,7 +115,7 @@ function ebookFormValue($key, $oldInput)
                     name="publishedYear"
                     min="1000"
                     max="<?= date('Y') ?>"
-                    value="<?= ebookFormValue('publishedYear', $oldInput) ?>"
+                    value="<?= ebookFormValue('publishedYear', $formData) ?>"
                     required
                 >
             </div>
@@ -123,28 +127,20 @@ function ebookFormValue($key, $oldInput)
                     id="pages"
                     name="pages"
                     min="1"
-                    value="<?= ebookFormValue('pages', $oldInput) ?>"
+                    value="<?= ebookFormValue('pages', $formData) ?>"
                     required
                 >
             </div>
 
             <div class="form-group">
                 <label for="language">Bahasa *</label>
-                <select id="language" name="language" required>
-                    <option value="">Pilih Bahasa</option>
-                    <option value="Indonesia"
-                        <?= ($oldInput['language'] ?? '') === 'Indonesia' ? 'selected' : '' ?>>
-                        Indonesia
-                    </option>
-                    <option value="Inggris"
-                        <?= ($oldInput['language'] ?? '') === 'Inggris' ? 'selected' : '' ?>>
-                        Inggris
-                    </option>
-                    <option value="Lainnya"
-                        <?= ($oldInput['language'] ?? '') === 'Lainnya' ? 'selected' : '' ?>>
-                        Lainnya
-                    </option>
-                </select>
+                <input
+                    type="text"
+                    id="language"
+                    name="language"
+                    value="<?= ebookFormValue('language', $formData) ?>"
+                    required
+                >
             </div>
 
             <div class="form-group">
@@ -152,11 +148,11 @@ function ebookFormValue($key, $oldInput)
                 <select id="format" name="format" required>
                     <option value="">Pilih Format</option>
                     <option value="PDF"
-                        <?= ($oldInput['format'] ?? '') === 'PDF' ? 'selected' : '' ?>>
+                        <?= ($formData['format'] ?? '') === 'PDF' ? 'selected' : '' ?>>
                         PDF
                     </option>
                     <option value="EPUB"
-                        <?= ($oldInput['format'] ?? '') === 'EPUB' ? 'selected' : '' ?>>
+                        <?= ($formData['format'] ?? '') === 'EPUB' ? 'selected' : '' ?>>
                         EPUB
                     </option>
                 </select>
@@ -169,7 +165,7 @@ function ebookFormValue($key, $oldInput)
                     id="totalCopies"
                     name="totalCopies"
                     min="1"
-                    value="<?= ebookFormValue('totalCopies', $oldInput) ?>"
+                    value="<?= ebookFormValue('totalCopies', $formData) ?>"
                     required
                 >
             </div>
@@ -183,7 +179,7 @@ function ebookFormValue($key, $oldInput)
                 name="description"
                 rows="5"
                 required
-            ><?= ebookFormValue('description', $oldInput) ?></textarea>
+            ><?= ebookFormValue('description', $formData) ?></textarea>
         </div>
 
         <div class="ebook-form-actions">
@@ -192,7 +188,7 @@ function ebookFormValue($key, $oldInput)
             </a>
 
             <button type="submit" class="btn-primary">
-                Simpan E-Book
+                <?= $isEditing ? 'Simpan Perubahan' : 'Simpan E-Book' ?>
             </button>
         </div>
 
