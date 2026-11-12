@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
-abstract class Media
+use JsonSerializable;
+
+abstract class Media implements JsonSerializable
 {
     protected string $id;
     protected string $title;
@@ -26,4 +28,10 @@ abstract class Media
     abstract public function isAvailable(): bool;
     abstract public function decrementAvailableCopies(): void;
     abstract public function incrementAvailableCopies(): void;
+    abstract public function toArray(): array;
+
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
+    }
 }
