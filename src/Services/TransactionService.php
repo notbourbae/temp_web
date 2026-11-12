@@ -1,106 +1,161 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Services;
 
-use App\Models\User;
+use App\Models\Transaction;
 
 class TransactionService
 {
+    private string $transactionsFile;
+    private EbookService $ebookService;
+    private MemberService $memberService;
+
     public function __construct(
-        private CatalogService $catalogService,
-        private string $transactionLogPath
+        ?string $transactionsFile = null,
+        ?EbookService $ebookService = null,
+        ?MemberService $memberService = null
     ) {
-        $this->ensureLogExists();
+        $this->transactionsFile = $transactionsFile ?? __DIR__ . '/../../data/transactions.json';
+        $this->ebookService     = $ebookService ?? new EbookService();
+        $this->memberService    = $memberService ?? new MemberService();
     }
 
-    private function ensureLogExists(): void
+    public function getAll(): array
     {
-        $dir = dirname($this->transactionLogPath);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-
-        if (!file_exists($this->transactionLogPath)) {
-            file_put_contents($this->transactionLogPath, json_encode([], JSON_PRETTY_PRINT));
-        }
+        return JsonStorage::read($this->transactionsFile);
     }
 
-    public function prosesPenyewaan(User $user, string $ebookId, int $durasiHari): array
+    public function getByUserId(string $userId): array
     {
-        if ($durasiHari < 1 || $durasiHari > 30) {
-            throw new \InvalidArgumentException('Durasi peminjaman harus antara 1 hingga 30 hari.');
+        return array_values(array_filter(
+            $this->getAll(),
+            fn($t) => ($t['userId'] ?? '') === $userId
+        ));
+    }
+
+    public function borrowEbook(string $userId, string $ebookId, int $durationDays = 7): array
+    {
+        $user = $this->memberService->getById($userId);
+        if (!$user) {
+            return ['success' => false, 'message' => 'Akun pengguna tidak ditemukan.'];
         }
 
-        $media = $this->catalogService->findById($ebookId);
-        if ($media === null) {
-            throw new \InvalidArgumentException('E-Book yang dipilih tidak ditemukan dalam katalog.');
+        $ebook = $this->ebookService->getById($ebookId);
+        if (!$ebook) {
+            return ['success' => false, 'message' => 'E-Book tidak ditemukan.'];
         }
 
-        if (!$media->isAvailable()) {
-            throw new \RuntimeException("Maaf, stok salinan untuk '{$media->getTitle()}' sedang habis (0 tersedia).");
+        if ((int) ($ebook['availableCopies'] ?? 0) <= 0) {
+            return ['success' => false, 'message' => 'Stok E-Book sedang habis dan tidak tersedia untuk dipinjam.'];
         }
 
-        // Pemanggilan metode polimorfik pada objek Media/Ebook
-        $subtotal = $media->hitungBiayaSewa($durasiHari);
-        $biayaLisensi = $media->getBiayaLisensi();
-        $diskon = $user->hitungDiskon($subtotal);
-        $totalBayar = $subtotal - $diskon;
-
-        // Kurangi availableCopies sebanyak 1 dan simpan ke ebooks.json
-        if (!$this->catalogService->borrowCopy($ebookId)) {
-            throw new \RuntimeException('Gagal memperbarui ketersediaan salinan e-book.');
+        $transactions = $this->getAll();
+        foreach ($transactions as $trx) {
+            if (($trx['userId'] ?? '') === $userId && ($trx['ebookId'] ?? '') === $ebookId && ($trx['status'] ?? '') === 'borrowed') {
+                return ['success' => false, 'message' => 'Anda masih meminjam E-Book ini. Kembalikan terlebih dahulu sebelum meminjam ulang.'];
+            }
         }
 
-        $transaksi = [
-            'kode_transaksi'  => 'TRX-' . strtoupper(bin2hex(random_bytes(3))),
-            'waktu'           => date('d M Y, H:i') . ' WIB',
-            'member_id'       => $user->getMemberId(),
-            'nama'            => $user->getNama(),
-            'email'           => $user->getEmail(),
-            'tipe_member'     => strtoupper($user->getTipeMember()),
-            'ebook_id'        => $media->getId(),
-            'title'           => $media->getTitle(),
-            'author'          => $media->getAuthor(),
-            'publisher'       => $media->getPublisher(),
-            'category'        => $media->getCategory(),
-            'isbn'            => $media->getIsbn(),
-            'format'          => $media->getFormat(),
-            'availableCopies' => $media->getAvailableCopies(),
-            'totalCopies'     => $media->getTotalCopies(),
-            'durasi'          => $durasiHari . ' Hari',
-            'biaya_lisensi'   => $biayaLisensi,
-            'diskon'          => $diskon,
-            'total_angka'     => $totalBayar,
-            'total_bayar'     => 'Rp ' . number_format($totalBayar, 0, ',', '.'),
+        $borrowedAt = date('Y-m-d');
+        $dueAt      = date('Y-m-d', strtotime("+{$durationDays} days"));
+
+        $newTrx = new Transaction([
+            'id'         => JsonStorage::generateId('TRX', $transactions),
+            'userId'     => $userId,
+            'ebookId'    => $ebookId,
+            'borrowedAt' => $borrowedAt,
+            'dueAt'      => $dueAt,
+            'returnedAt' => null,
+            'status'     => 'borrowed',
+        ]);
+
+        if (!$this->ebookService->updateAvailableCopies($ebookId, -1)) {
+            return ['success' => false, 'message' => 'Gagal memperbarui stok E-Book.'];
+        }
+
+        $transactions[] = $newTrx->toArray();
+        JsonStorage::write($this->transactionsFile, $transactions);
+
+        return ['success' => true, 'message' => 'Peminjaman berhasil dicatat. Jatuh tempo: ' . $dueAt, 'data' => $newTrx->toArray()];
+    }
+
+    public function returnEbook(string $transactionId, ?string $userId = null): array
+    {
+        $transactions = $this->getAll();
+        $found = false;
+        $ebookId = '';
+
+        foreach ($transactions as &$trx) {
+            if (($trx['id'] ?? '') === $transactionId) {
+                if ($userId !== null && ($trx['userId'] ?? '') !== $userId) {
+                    return ['success' => false, 'message' => 'Anda tidak memiliki akses untuk transaksi ini.'];
+                }
+
+                if (($trx['status'] ?? '') === 'returned') {
+                    return ['success' => false, 'message' => 'E-Book pada transaksi ini sudah dikembalikan sebelumnya.'];
+                }
+
+                $trx['returnedAt'] = date('Y-m-d');
+                $trx['status']     = 'returned';
+                $ebookId           = (string) ($trx['ebookId'] ?? '');
+                $found             = true;
+                break;
+            }
+        }
+        unset($trx);
+
+        if (!$found) {
+            return ['success' => false, 'message' => 'Transaksi peminjaman tidak ditemukan.'];
+        }
+
+        JsonStorage::write($this->transactionsFile, $transactions);
+        if ($ebookId !== '') {
+            $this->ebookService->updateAvailableCopies($ebookId, 1);
+        }
+
+        return ['success' => true, 'message' => 'E-Book berhasil dikembalikan dan stok telah diperbarui.'];
+    }
+
+    public function getDashboardStats(): array
+    {
+        $ebooks       = $this->ebookService->getAll();
+        $members      = $this->memberService->getAllMembers();
+        $transactions = $this->getAll();
+
+        $ebookMap = [];
+        foreach ($ebooks as $eb) {
+            $ebookMap[$eb['id']] = $eb['title'];
+        }
+
+        $memberMap = [];
+        foreach ($members as $mb) {
+            $memberMap[$mb['id']] = $mb['name'];
+        }
+
+        $activeLoans   = 0;
+        $returnedLoans = 0;
+        foreach ($transactions as $trx) {
+            if (($trx['status'] ?? '') === 'borrowed') {
+                $activeLoans++;
+            } elseif (($trx['status'] ?? '') === 'returned') {
+                $returnedLoans++;
+            }
+        }
+
+        $recent = array_slice(array_reverse($transactions), 0, 5);
+        foreach ($recent as &$r) {
+            $r['ebookTitle'] = $ebookMap[$r['ebookId']] ?? $r['ebookId'];
+            $r['userName']   = $memberMap[$r['userId']] ?? $r['userId'];
+        }
+        unset($r);
+
+        return [
+            'totalEbooks'        => count($ebooks),
+            'totalMembers'       => count($members),
+            'totalTransactions'  => count($transactions),
+            'activeLoans'        => $activeLoans,
+            'returnedLoans'      => $returnedLoans,
+            'recentTransactions' => $recent,
         ];
-
-        $this->appendTransaction($transaksi);
-
-        return $transaksi;
-    }
-
-    public function getAllTransactions(): array
-    {
-        $raw = file_get_contents($this->transactionLogPath);
-        $data = json_decode($raw ?: '[]', true);
-        return is_array($data) ? $data : [];
-    }
-
-    private function appendTransaction(array $transaksi): void
-    {
-        $history = $this->getAllTransactions();
-        array_unshift($history, $transaksi);
-
-        file_put_contents(
-            $this->transactionLogPath,
-            json_encode($history, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-        );
-    }
-
-    public function clearTransactions(): void
-    {
-        file_put_contents($this->transactionLogPath, json_encode([], JSON_PRETTY_PRINT));
     }
 }

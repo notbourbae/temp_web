@@ -1,66 +1,137 @@
 <?php
 
-declare(strict_types=1);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 require_once __DIR__ . '/src/autoload.php';
 
-use App\Models\User;
-use App\Services\CatalogService;
+use App\Services\AuthService;
+use App\Services\EbookService;
+use App\Services\MemberService;
 use App\Services\TransactionService;
 
-header('Content-Type: application/json; charset=utf-8');
+$authService        = new AuthService();
+$ebookService       = new EbookService();
+$memberService      = new MemberService();
+$transactionService = new TransactionService();
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode([
-        'status'  => 'error',
-        'message' => 'Metode HTTP tidak diizinkan. Gunakan POST.',
-    ]);
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+function redirectWithFlash(string $url, bool $success, string $message): void
+{
+    $_SESSION[$success ? 'flash_success' : 'flash_error'] = $message;
+    header('Location: ' . $url);
     exit;
 }
 
-try {
-    $catalogService = new CatalogService(__DIR__ . '/data/ebooks.json');
-    $transactionService = new TransactionService($catalogService, __DIR__ . '/data/transactions.json');
-
-    $action = $_POST['action'] ?? 'rent';
-
-    if ($action === 'reset') {
-        $catalogService->resetDefaultCatalog();
-        $transactionService->clearTransactions();
-
-        echo json_encode([
-            'status'  => 'success',
-            'message' => 'Data katalog dan riwayat transaksi berhasil direset ke kondisi awal.',
-        ]);
-        exit;
+function requireAdminAccess(AuthService $authService): void
+{
+    if (!$authService->isLoggedIn() || !$authService->isAdmin()) {
+        redirectWithFlash('index.php?page=login', false, 'Akses ditolak. Silakan login sebagai Admin.');
     }
+}
 
-    $nama       = (string) ($_POST['nama'] ?? '');
-    $memberId   = (string) ($_POST['member_id'] ?? '');
-    $email      = (string) ($_POST['email'] ?? '');
-    $tipeMember = (string) ($_POST['tipe_member'] ?? 'reguler');
-    $ebookId    = (string) ($_POST['ebook_id'] ?? '');
-    $durasi     = (int) ($_POST['durasi'] ?? 0);
+function requireLoginAccess(AuthService $authService): array
+{
+    $user = $authService->currentUser();
+    if (!$user) {
+        redirectWithFlash('index.php?page=login', false, 'Silakan login terlebih dahulu.');
+    }
+    return $user;
+}
 
-    $user = new User($memberId, $nama, $email, $tipeMember);
-    $hasilTransaksi = $transactionService->prosesPenyewaan($user, $ebookId, $durasi);
+switch ($action) {
+    // --- AUTHENTICATION ---
+    case 'login':
+        $res = $authService->login($_POST['email'] ?? '', $_POST['password'] ?? '');
+        if ($res['success']) {
+            redirectWithFlash($res['redirect'], true, $res['message']);
+        }
+        redirectWithFlash('index.php?page=login', false, $res['message']);
+        break;
 
-    http_response_code(200);
-    echo json_encode([
-        'status' => 'success',
-        'data'   => $hasilTransaksi,
-    ]);
-} catch (\InvalidArgumentException | \RuntimeException $e) {
-    http_response_code(422);
-    echo json_encode([
-        'status'  => 'error',
-        'message' => $e->getMessage(),
-    ]);
-} catch (\Throwable $e) {
-    http_response_code(500);
-    echo json_encode([
-        'status'  => 'error',
-        'message' => 'Terjadi kesalahan internal pada server: ' . $e->getMessage(),
-    ]);
+    case 'register':
+        $res = $authService->register(
+            $_POST['name'] ?? '',
+            $_POST['email'] ?? '',
+            $_POST['password'] ?? '',
+            $_POST['confirm_password'] ?? ''
+        );
+        $target = $res['success'] ? 'index.php?page=login' : 'index.php?page=register';
+        redirectWithFlash($target, $res['success'], $res['message']);
+        break;
+
+    case 'logout':
+        $authService->logout();
+        session_start();
+        redirectWithFlash('index.php?page=login', true, 'Anda telah berhasil logout.');
+        break;
+
+    // --- MANAJEMEN E-BOOK (ADMIN) ---
+    case 'create_ebook':
+        requireAdminAccess($authService);
+        $res = $ebookService->create($_POST);
+        $target = $res['success'] ? 'index.php?page=admin/kelola-ebook' : 'index.php?page=admin/tambah-ebook';
+        redirectWithFlash($target, $res['success'], $res['message']);
+        break;
+
+    case 'update_ebook':
+        requireAdminAccess($authService);
+        $id  = $_POST['id'] ?? '';
+        $res = $ebookService->update($id, $_POST);
+        redirectWithFlash('index.php?page=admin/kelola-ebook', $res['success'], $res['message']);
+        break;
+
+    case 'delete_ebook':
+        requireAdminAccess($authService);
+        $id  = $_POST['id'] ?? $_GET['id'] ?? '';
+        $res = $ebookService->delete($id);
+        redirectWithFlash('index.php?page=admin/kelola-ebook', $res['success'], $res['message']);
+        break;
+
+    // --- MANAJEMEN MEMBER (ADMIN) ---
+    case 'create_member':
+        requireAdminAccess($authService);
+        $res = $memberService->createMember($_POST);
+        $target = $res['success'] ? 'index.php?page=admin/kelola-member' : 'index.php?page=admin/tambah-member';
+        redirectWithFlash($target, $res['success'], $res['message']);
+        break;
+
+    case 'update_member':
+        requireAdminAccess($authService);
+        $id  = $_POST['id'] ?? '';
+        $res = $memberService->updateMember($id, $_POST);
+        redirectWithFlash('index.php?page=admin/kelola-member', $res['success'], $res['message']);
+        break;
+
+    case 'delete_member':
+        requireAdminAccess($authService);
+        $id  = $_POST['id'] ?? $_GET['id'] ?? '';
+        $res = $memberService->deleteMember($id);
+        redirectWithFlash('index.php?page=admin/kelola-member', $res['success'], $res['message']);
+        break;
+
+    // --- PEMINJAMAN & PENGEMBALIAN (MEMBER) ---
+    case 'borrow_ebook':
+        $user    = requireLoginAccess($authService);
+        $ebookId = $_POST['ebookId'] ?? $_GET['ebookId'] ?? '';
+        $days    = (int) ($_POST['duration'] ?? 7);
+        $res     = $transactionService->borrowEbook($user['id'], $ebookId, $days > 0 ? $days : 7);
+        $target  = $res['success'] ? 'index.php?page=peminjaman' : 'index.php?page=detail-ebook&id=' . urlencode($ebookId);
+        redirectWithFlash($target, $res['success'], $res['message']);
+        break;
+
+    case 'return_ebook':
+        $user  = requireLoginAccess($authService);
+        $trxId = $_POST['transactionId'] ?? $_GET['transactionId'] ?? '';
+        $ownerFilter = ($user['role'] === 'admin') ? null : $user['id'];
+        $res   = $transactionService->returnEbook($trxId, $ownerFilter);
+        $target = ($user['role'] === 'admin') ? 'index.php?page=admin/dashboard' : 'index.php?page=riwayat';
+        redirectWithFlash($target, $res['success'], $res['message']);
+        break;
+
+    default:
+        redirectWithFlash('index.php', false, 'Aksi tidak dikenali.');
+        break;
 }
