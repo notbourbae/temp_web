@@ -72,7 +72,7 @@ switch ($action) {
     case 'create_ebook':
         requireAdminAccess($authService);
         $res = $ebookService->create($_POST);
-        $target = $res['success'] ? 'index.php?page=admin/kelola-ebook' : 'index.php?page=admin/tambah-ebook';
+        $target = $res['success'] ? 'index.php?page=kelola-ebook' : 'index.php?page=tambah-ebook';
         redirectWithFlash($target, $res['success'], $res['message']);
         break;
 
@@ -80,36 +80,43 @@ switch ($action) {
         requireAdminAccess($authService);
         $id  = $_POST['id'] ?? '';
         $res = $ebookService->update($id, $_POST);
-        redirectWithFlash('index.php?page=admin/kelola-ebook', $res['success'], $res['message']);
+        redirectWithFlash('index.php?page=kelola-ebook', $res['success'], $res['message']);
         break;
 
     case 'delete_ebook':
         requireAdminAccess($authService);
         $id  = $_POST['id'] ?? $_GET['id'] ?? '';
         $res = $ebookService->delete($id);
-        redirectWithFlash('index.php?page=admin/kelola-ebook', $res['success'], $res['message']);
+        redirectWithFlash('index.php?page=kelola-ebook', $res['success'], $res['message']);
         break;
 
     // --- MANAJEMEN MEMBER (ADMIN) ---
     case 'create_member':
         requireAdminAccess($authService);
-        $res = $memberService->createMember($_POST);
-        $target = $res['success'] ? 'index.php?page=admin/kelola-member' : 'index.php?page=admin/tambah-member';
+        $res = $memberService->createMember(
+            $_POST,
+            (string) ($_POST['confirm_password'] ?? '')
+        );
+        $target = $res['success'] ? 'index.php?page=kelola-member' : 'index.php?page=tambah-member';
         redirectWithFlash($target, $res['success'], $res['message']);
         break;
 
     case 'update_member':
         requireAdminAccess($authService);
         $id  = $_POST['id'] ?? '';
-        $res = $memberService->updateMember($id, $_POST);
-        redirectWithFlash('index.php?page=admin/kelola-member', $res['success'], $res['message']);
+        $res = $memberService->updateMember(
+            $id,
+            $_POST,
+            (string) ($_POST['confirm_password'] ?? '')
+        );
+        redirectWithFlash('index.php?page=kelola-member', $res['success'], $res['message']);
         break;
 
     case 'delete_member':
         requireAdminAccess($authService);
         $id  = $_POST['id'] ?? $_GET['id'] ?? '';
         $res = $memberService->deleteMember($id);
-        redirectWithFlash('index.php?page=admin/kelola-member', $res['success'], $res['message']);
+        redirectWithFlash('index.php?page=kelola-member', $res['success'], $res['message']);
         break;
 
     // --- PEMINJAMAN & PENGEMBALIAN (MEMBER) ---
@@ -127,7 +134,7 @@ switch ($action) {
         $trxId = $_POST['transactionId'] ?? $_GET['transactionId'] ?? '';
         $ownerFilter = ($user['role'] === 'admin') ? null : $user['id'];
         $res   = $transactionService->returnEbook($trxId, $ownerFilter);
-        $target = ($user['role'] === 'admin') ? 'index.php?page=admin/dashboard' : 'index.php?page=riwayat';
+        $target = ($user['role'] === 'admin') ? 'index.php?page=admin-dashboard' : 'index.php?page=riwayat';
         redirectWithFlash($target, $res['success'], $res['message']);
         break;
 
