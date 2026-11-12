@@ -49,52 +49,42 @@ class Ebook extends Media
     {
         return $this->author;
     }
-
     public function getPublisher(): string
     {
         return $this->publisher;
     }
-
     public function getCategory(): string
     {
         return $this->category;
     }
-
     public function getIsbn(): string
     {
         return $this->isbn;
     }
-
     public function getPublishedYear(): int
     {
         return $this->publishedYear;
     }
-
     public function getPages(): int
     {
         return $this->pages;
     }
-
     public function getLanguage(): string
     {
         return $this->language;
     }
-
     public function getFormat(): string
     {
         return $this->format;
     }
-
     public function getDescription(): string
     {
         return $this->description;
     }
-
     public function getTotalCopies(): int
     {
         return $this->totalCopies;
     }
-
     public function getAvailableCopies(): int
     {
         return $this->availableCopies;
