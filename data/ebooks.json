@@ -1,0 +1,62 @@
+[
+    {
+        "id": "EB-001",
+        "title": "PHP 8 Objects, Patterns, and Practice",
+        "author": "Matt Zandstra",
+        "publisher": "Apress",
+        "category": "Programming",
+        "isbn": "978-1484267905",
+        "publishedYear": 2021,
+        "pages": 824,
+        "language": "English",
+        "format": "PDF",
+        "description": "Panduan mendalam arsitektur OOP modern, design patterns, dan fitur terbaru PHP 8.",
+        "totalCopies": 5,
+        "availableCopies": 4
+    },
+    {
+        "id": "EB-002",
+        "title": "Clean Code: A Handbook of Agile Software Craftsmanship",
+        "author": "Robert C. Martin",
+        "publisher": "Prentice Hall",
+        "category": "Software Engineering",
+        "isbn": "978-0132350884",
+        "publishedYear": 2008,
+        "pages": 464,
+        "language": "English",
+        "format": "EPUB",
+        "description": "Prinsip penulisan kode yang bersih, modular, mudah dibaca, dan terstruktur.",
+        "totalCopies": 4,
+        "availableCopies": 2
+    },
+    {
+        "id": "EB-003",
+        "title": "Arsitektur Web Modern dengan HTML, CSS, dan JavaScript",
+        "author": "Budi Raharjo",
+        "publisher": "Informatika Bandung",
+        "category": "Web Development",
+        "isbn": "978-6237131540",
+        "publishedYear": 2024,
+        "pages": 380,
+        "language": "Indonesian",
+        "format": "PDF",
+        "description": "Membangun antarmuka web semantik, responsif, dan interaktif tanpa ketergantungan framework.",
+        "totalCopies": 6,
+        "availableCopies": 6
+    },
+    {
+        "id": "EB-004",
+        "title": "Designing Data-Intensive Applications",
+        "author": "Martin Kleppmann",
+        "publisher": "O'Reilly Media",
+        "category": "Distributed Systems",
+        "isbn": "978-1449373320",
+        "publishedYear": 2017,
+        "pages": 616,
+        "language": "English",
+        "format": "EPUB",
+        "description": "Konsep skalabilitas aplikasi web, replikasi data, dan konsistensi sistem terdistribusi.",
+        "totalCopies": 3,
+        "availableCopies": 0
+    }
+]
