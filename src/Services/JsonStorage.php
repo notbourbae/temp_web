@@ -8,35 +8,52 @@ class JsonStorage
     {
         if (!file_exists($filePath)) {
             $dir = dirname($filePath);
-            if (!is_dir($dir)) {
-                mkdir($dir, 0775, true);
+            if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+                throw new \RuntimeException("Tidak dapat membuat direktori penyimpanan: {$dir}");
             }
-            file_put_contents($filePath, "[]\n", LOCK_EX);
+            if (file_put_contents($filePath, "[]\n", LOCK_EX) === false) {
+                throw new \RuntimeException("Tidak dapat membuat file JSON: {$filePath}");
+            }
             return [];
         }
 
         $content = file_get_contents($filePath);
-        if ($content === false || trim($content) === '') {
+        if ($content === false) {
+            throw new \RuntimeException("Tidak dapat membaca file JSON: {$filePath}");
+        }
+        if (trim($content) === '') {
             return [];
         }
 
-        $decoded = json_decode($content, true);
-        return is_array($decoded) ? $decoded : [];
+        try {
+            $decoded = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $exception) {
+            throw new \RuntimeException("Format JSON tidak valid: {$filePath}", 0, $exception);
+        }
+
+        if (!is_array($decoded)) {
+            throw new \RuntimeException("Struktur JSON harus berupa array: {$filePath}");
+        }
+
+        return $decoded;
     }
 
     public static function write(string $filePath, array $data): bool
     {
         $dir = dirname($filePath);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new \RuntimeException("Tidak dapat membuat direktori penyimpanan: {$dir}");
         }
 
-        $json = json_encode(array_values($data), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if ($json === false) {
-            return false;
+        $json = json_encode(
+            array_values($data),
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+        );
+        if (file_put_contents($filePath, $json . "\n", LOCK_EX) === false) {
+            throw new \RuntimeException("Tidak dapat menulis file JSON: {$filePath}");
         }
 
-        return file_put_contents($filePath, $json . "\n", LOCK_EX) !== false;
+        return true;
     }
 
     public static function generateId(string $prefix, array $items): string
