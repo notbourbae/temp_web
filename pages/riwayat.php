@@ -17,8 +17,8 @@ function readRiwayatJson($filePath)
     return is_array($data) ? $data : [];
 }
 
-$ebooks = readRiwayatJson(__DIR__ . '/../../data/ebooks.json');
-$transactions = readRiwayatJson(__DIR__ . '/../../data/transactions.json');
+$ebooks = readRiwayatJson(__DIR__ . '/../data/ebooks.json');
+$transactions = readRiwayatJson(__DIR__ . '/../data/transactions.json');
 
 $currentUser = $_SESSION['user'] ?? [];
 $currentUserId = $currentUser['id'] ?? $currentUser['userId'] ?? null;
