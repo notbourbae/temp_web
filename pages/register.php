@@ -1,4 +1,9 @@
 
+<?php
+$flashSuccess = $_SESSION['flash_success'] ?? '';
+$flashError = $_SESSION['flash_error'] ?? '';
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -26,13 +31,21 @@
                 <p>Daftarkan diri untuk menikmati layanan perpustakaan.</p>
             </div>
 
-            <form id="registerForm">
+            <?php if ($flashSuccess !== ''): ?>
+                <div class="login-message success" role="status"><?= htmlspecialchars($flashSuccess, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php endif; ?>
+            <?php if ($flashError !== ''): ?>
+                <div class="login-message error" role="alert"><?= htmlspecialchars($flashError, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php endif; ?>
 
+            <form action="process.php" method="POST">
+                <input type="hidden" name="action" value="register">
                 <div class="login-form-group">
                     <label for="registerName">Nama Lengkap</label>
                     <input
                         type="text"
                         id="registerName"
+                        name="name"
                         placeholder="Masukkan nama lengkap"
                         required
                     >
@@ -43,6 +56,7 @@
                     <input
                         type="email"
                         id="registerEmail"
+                        name="email"
                         placeholder="Masukkan email"
                         required
                     >
@@ -53,6 +67,7 @@
                     <input
                         type="password"
                         id="registerPassword"
+                        name="password"
                         placeholder="Minimal 6 karakter"
                         minlength="6"
                         required
@@ -64,13 +79,12 @@
                     <input
                         type="password"
                         id="registerConfirmPassword"
+                        name="confirm_password"
                         placeholder="Ulangi password"
                         minlength="6"
                         required
                     >
                 </div>
-
-                <div id="registerMessage" class="login-message"></div>
 
                 <button type="submit" class="login-button">
                     Daftar Sekarang
@@ -85,62 +99,9 @@
                 </p>
             </div>
 
-            <div class="login-demo-info">
-                <strong>Mode Demonstrasi</strong>
-                <p>
-                    Pendaftaran ini hanya simulasi Front-End.
-                    Data akun tidak disimpan.
-                </p>
-            </div>
-
         </div>
 
     </div>
-
-    <script>
-        const registerForm = document.getElementById("registerForm");
-
-        registerForm.addEventListener("submit", function(event) {
-            event.preventDefault();
-
-            const name = document.getElementById("registerName").value.trim();
-            const email = document.getElementById("registerEmail").value.trim();
-            const password = document.getElementById("registerPassword").value;
-            const confirmPassword = document.getElementById("registerConfirmPassword").value;
-            const message = document.getElementById("registerMessage");
-
-            message.className = "login-message";
-
-            if (!name || !email || !password || !confirmPassword) {
-                message.textContent = "Semua kolom wajib diisi.";
-                message.classList.add("error");
-                return;
-            }
-
-            if (password.length < 6) {
-                message.textContent = "Password minimal 6 karakter.";
-                message.classList.add("error");
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                message.textContent = "Konfirmasi password tidak sesuai.";
-                message.classList.add("error");
-                return;
-            }
-
-            message.textContent =
-                "Pendaftaran simulasi berhasil! Mengarahkan ke halaman Login...";
-
-            message.classList.add("success");
-
-            registerForm.querySelector("button[type='submit']").disabled = true;
-
-            setTimeout(function() {
-                window.location.href = "index.php?page=login";
-            }, 1500);
-        });
-    </script>
 
 </body>
 </html>
