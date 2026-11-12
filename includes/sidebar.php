@@ -8,8 +8,8 @@
 
 $currentPage = $_GET['page'] ?? 'dashboard';
 
-// Membaca role dari URL untuk simulasi Front-End
-$userRole = $_GET['role'] ?? 'member';
+// Role berasal dari sesi login, bukan parameter URL.
+$userRole = $_SESSION['user']['role'] ?? 'member';
 
 // Memastikan role hanya admin atau member
 if (!in_array($userRole, ['admin', 'member'], true)) {
@@ -124,7 +124,7 @@ function isActivePage($page, $currentPage) {
     <!-- SIDEBAR FOOTER -->
     <div class="sidebar-footer">
 
-        <a href="index.php?page=login" class="nav-link logout">
+        <a href="process.php?action=logout" class="nav-link logout">
             <span class="nav-icon">↪</span>
             <span>Keluar</span>
         </a>
