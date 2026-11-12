@@ -17,8 +17,8 @@ function readPeminjamanJson($filePath)
     return is_array($data) ? $data : [];
 }
 
-$ebooks = readPeminjamanJson(__DIR__ . '/../../data/ebooks.json');
-$transactions = readPeminjamanJson(__DIR__ . '/../../data/transactions.json');
+$ebooks = readPeminjamanJson(__DIR__ . '/../data/ebooks.json');
+$transactions = readPeminjamanJson(__DIR__ . '/../data/transactions.json');
 
 // Identitas pengguna yang sedang login
 $currentUser = $_SESSION['user'] ?? [];
