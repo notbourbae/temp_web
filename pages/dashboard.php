@@ -38,7 +38,7 @@ function readDashboardJson($filePath)
 // ==========================================
 
 $books = readDashboardJson(
-    __DIR__ . '/../../data/ebooks.json'
+    __DIR__ . '/../data/ebooks.json'
 );
 
 
@@ -47,7 +47,7 @@ $books = readDashboardJson(
 // ==========================================
 
 $transactions = readDashboardJson(
-    __DIR__ . '/../../data/transactions.json'
+    __DIR__ . '/../data/transactions.json'
 );
 
 
