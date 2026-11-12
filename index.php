@@ -23,19 +23,31 @@ if (session_status() === PHP_SESSION_NONE) {
 $pages = [
 
     '404' => [
-    'title' => 'Halaman Tidak Ditemukan',
-    'file' => 'pages/errors/404.php',
-    'auth' => false
+        'title' => 'Halaman Tidak Ditemukan',
+        'file' => 'pages/errors/404.php',
+        'auth' => false
     ],
-    
+
     'tambah-member' => [
         'title' => 'Tambah Member',
         'file' => 'pages/admin/tambah-member.php',
         'auth' => false
     ],
 
+    'edit-member' => [
+        'title' => 'Edit Member',
+        'file' => 'pages/admin/tambah-member.php',
+        'auth' => false
+    ],
+
     'tambah-ebook' => [
         'title' => 'Tambah E-Book',
+        'file' => 'pages/admin/tambah-ebook.php',
+        'auth' => false
+    ],
+
+    'edit-ebook' => [
+        'title' => 'Edit E-Book',
         'file' => 'pages/admin/tambah-ebook.php',
         'auth' => false
     ],
@@ -129,7 +141,6 @@ if (isset($pages[$currentPage])) {
     $pageFile = $pages[$currentPage]['file'];
 
     $isAuthPage = $pages[$currentPage]['auth'];
-
 } else {
 
     http_response_code(404);
@@ -139,7 +150,6 @@ if (isset($pages[$currentPage])) {
     $pageFile = 'pages/errors/404.php';
 
     $isAuthPage = false;
-
 }
 
 
@@ -158,7 +168,6 @@ if (!file_exists($fullPagePath)) {
     $fullPagePath = __DIR__ . '/pages/errors/404.php';
 
     $isAuthPage = false;
-
 }
 
 
@@ -170,7 +179,6 @@ if ($isAuthPage) {
 
     // Login dan Register
     require $fullPagePath;
-
 } else {
 
     // Header
@@ -182,13 +190,23 @@ if ($isAuthPage) {
     // Konten halaman
     echo '<main class="main-content">';
 
+    foreach (['success' => 'flash_success', 'error' => 'flash_error'] as $type => $key) {
+        if (isset($_SESSION[$key])) {
+            printf(
+                '<div class="member-form-message %s" role="status">%s</div>',
+                $type === 'success' ? 'success' : 'error',
+                htmlspecialchars((string) $_SESSION[$key], ENT_QUOTES, 'UTF-8')
+            );
+            unset($_SESSION[$key]);
+        }
+    }
+
     require $fullPagePath;
 
     echo '</main>';
 
     // Footer
     require __DIR__ . '/includes/footer.php';
-
 }
 
 ?>
