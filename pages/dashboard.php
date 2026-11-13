@@ -1,4 +1,3 @@
-
 <?php
 
 /**
@@ -7,48 +6,31 @@
  * Front-End: Rudi
  */
 
-// ==========================================
-// 1. MEMBACA FILE JSON
-// ==========================================
+// [DITAMBAHKAN] Memuat autoload, EbookService, dan TransactionService untuk statistik dari JSON
+require_once __DIR__ . '/../src/autoload.php';
 
-function readDashboardJson($filePath)
-{
-    if (!file_exists($filePath)) {
-        return [];
-    }
-
-    $content = file_get_contents($filePath);
-
-    if ($content === false || trim($content) === '') {
-        return [];
-    }
-
-    $data = json_decode($content, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
-        return [];
-    }
-
-    return $data;
-}
+$ebookService       = new \App\Services\EbookService();
+$transactionService = new \App\Services\TransactionService();
 
 
 // ==========================================
 // 2. MENGAMBIL DATA BUKU
 // ==========================================
 
-$books = readDashboardJson(
-    __DIR__ . '/../data/ebooks.json'
-);
+// [DIUBAH] Mengambil data E-Book dari JSON melalui EbookService
+$books = $ebookService->getAll();
 
 
 // ==========================================
-// 3. MENGAMBIL DATA TRANSAKSI
+// 3. MENGAMBIL DATA TRANSAKSI PENGGUNA
 // ==========================================
 
-$transactions = readDashboardJson(
-    __DIR__ . '/../data/transactions.json'
-);
+$currentUserId = (string) ($_SESSION['user']['id'] ?? $_SESSION['user']['userId'] ?? '');
+
+// [DIUBAH] Mengambil transaksi khusus pengguna dari transactions.json (atau semua jika belum ada sesi)
+$transactions = $currentUserId !== ''
+    ? $transactionService->getByUserId($currentUserId)
+    : $transactionService->getAll();
 
 
 // ==========================================
@@ -69,17 +51,12 @@ foreach ($books as $book) {
 
 
 // ==========================================
-// 5. MENGHITUNG PEMINJAMAN AKTIF
+// 5. MENGHITUNG TOTAL PEMINJAMAN & AKTIF
 // ==========================================
 
-$totalBorrowed = 0;
-
-$returnedStatuses = [
-    'returned',
-    'dikembalikan',
-    'selesai',
-    'completed'
-];
+// [DIUBAH] Menghitung total seluruh peminjaman pengguna dari JSON
+$totalPeminjaman = count($transactions);
+$totalBorrowed   = 0;
 
 $activeStatuses = [
     'borrowed',
@@ -124,8 +101,9 @@ $statistics = [
         'color' => 'green'
     ],
     [
-        'title' => 'Dipinjam',
-        'value' => $totalBorrowed,
+        // [DIUBAH] Menampilkan Total Peminjaman dari JSON (beserta jumlah aktif di sub-teks)
+        'title' => 'Total Peminjaman (' . $totalBorrowed . ' Aktif)',
+        'value' => $totalPeminjaman,
         'icon' => '⇄',
         'color' => 'purple'
     ]
@@ -133,11 +111,23 @@ $statistics = [
 
 
 // ==========================================
-// 7. MENGAMBIL 5 BUKU TERBARU
+// 7. MENGAMBIL 5 BUKU & TRANSAKSI TERBARU
 // ==========================================
 
-// Mengikuti urutan data di ebooks.json.
-// Belum ada atribut createdAt dalam skema buku.
+// Pemetaan judul buku berdasarkan ID untuk tabel transaksi terbaru
+$ebookTitleMap = [];
+foreach ($books as $book) {
+    if (isset($book['id'])) {
+        $ebookTitleMap[(string) $book['id']] = $book['title'] ?? '-';
+    }
+}
+
+// [DITAMBAHKAN] Mengurutkan dan mengambil 5 data transaksi terbaru dari JSON
+$recentTransactions = $transactions;
+usort($recentTransactions, static function ($a, $b) {
+    return strtotime($b['borrowedAt'] ?? '') <=> strtotime($a['borrowedAt'] ?? '');
+});
+$recentTransactions = array_slice($recentTransactions, 0, 5);
 
 $recentBooks = array_slice($books, 0, 5);
 
@@ -212,6 +202,112 @@ $userName = $_SESSION['user']['name'] ?? 'Pengguna';
             </article>
 
         <?php endforeach; ?>
+
+    </section>
+
+
+    <!-- ==================================
+         [DITAMBAHKAN] RECENT TRANSACTIONS
+    =================================== -->
+
+    <section class="content-card">
+
+        <div class="section-heading">
+
+            <div>
+
+                <h2>Transaksi Terbaru</h2>
+
+                <p>
+                    Riwayat peminjaman e-book terbaru Anda
+                </p>
+
+            </div>
+
+            <a href="index.php?page=riwayat" class="see-all">
+                Lihat Semua →
+            </a>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>No</th>
+                        <th>Judul Buku</th>
+                        <th>Tanggal Pinjam</th>
+                        <th>Jatuh Tempo</th>
+                        <th>Status</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    <?php if (empty($recentTransactions)): ?>
+
+                        <tr>
+
+                            <td colspan="5" class="empty-state">
+
+                                Belum ada transaksi peminjaman.
+
+                            </td>
+
+                        </tr>
+
+                    <?php else: ?>
+
+                        <?php foreach ($recentTransactions as $index => $trx): ?>
+
+                            <?php
+                            $isReturned = !empty($trx['returnedAt']) || strtolower((string) ($trx['status'] ?? '')) === 'returned';
+                            $bookTitle  = $ebookTitleMap[(string) ($trx['ebookId'] ?? '')] ?? ($trx['ebookId'] ?? '-');
+                            ?>
+
+                            <tr>
+
+                                <td>
+                                    <?= $index + 1 ?>
+                                </td>
+
+                                <td class="book-title">
+                                    <?= htmlspecialchars((string) $bookTitle) ?>
+                                </td>
+
+                                <td>
+                                    <?= !empty($trx['borrowedAt']) ? date('d/m/Y', strtotime((string) $trx['borrowedAt'])) : '-' ?>
+                                </td>
+
+                                <td>
+                                    <?= !empty($trx['dueAt']) ? date('d/m/Y', strtotime((string) $trx['dueAt'])) : '-' ?>
+                                </td>
+
+                                <td>
+                                    <?php if ($isReturned): ?>
+                                        <span class="status-badge history-returned">Dikembalikan</span>
+                                    <?php else: ?>
+                                        <span class="status-badge history-active">Sedang Dipinjam</span>
+                                    <?php endif; ?>
+                                </td>
+
+                            </tr>
+
+                        <?php endforeach; ?>
+
+                    <?php endif; ?>
+
+                </tbody>
+
+            </table>
+
+        </div>
 
     </section>
 

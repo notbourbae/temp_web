@@ -1,11 +1,34 @@
-
 <?php
-$user = $_SESSION['user'] ?? [];
+// [DITAMBAHKAN] Memuat autoload dan service untuk mengambil data terbaru dari JSON berdasarkan ID pengguna
+require_once __DIR__ . '/../src/autoload.php';
 
-$name = $user['name'] ?? '-';
+$memberService      = new \App\Services\MemberService();
+$transactionService = new \App\Services\TransactionService();
+
+$sessionUser = $_SESSION['user'] ?? [];
+$userId      = (string) ($sessionUser['id'] ?? $sessionUser['userId'] ?? '');
+
+// [DITAMBAHKAN] Mengambil data pengguna langsung dari users.json agar selalu sinkron
+$dbUser = $userId !== '' ? $memberService->getById($userId) : null;
+$user   = $dbUser ?? $sessionUser;
+
+if ($dbUser !== null) {
+    $_SESSION['user']['name']  = $dbUser['name'];
+    $_SESSION['user']['email'] = $dbUser['email'];
+    $_SESSION['user']['role']  = $dbUser['role'];
+}
+
+$name  = $user['name'] ?? '-';
 $email = $user['email'] ?? '-';
-$userId = $user['id'] ?? $user['userId'] ?? '-';
-$role = $user['role'] ?? '-';
+$role  = $user['role'] ?? '-';
+
+// [DITAMBAHKAN] Mengambil statistik peminjaman khusus milik pengguna dari transactions.json
+$userTransactions = $userId !== '' ? $transactionService->getByUserId($userId) : [];
+$totalUserLoans   = count($userTransactions);
+$activeUserLoans  = count(array_filter(
+    $userTransactions,
+    static fn(array $t): bool => ($t['status'] ?? '') === 'borrowed' && empty($t['returnedAt'])
+));
 
 $initial = $name !== '-' 
     ? strtoupper(substr($name, 0, 1)) 
@@ -66,7 +89,7 @@ $roleLabel = match (strtolower((string) $role)) {
 
             <div class="profile-detail-item">
                 <span>ID Pengguna</span>
-                <strong><?= htmlspecialchars((string) $userId) ?></strong>
+                <strong><?= htmlspecialchars((string) ($userId !== '' ? $userId : '-')) ?></strong>
             </div>
 
             <div class="profile-detail-item">
@@ -74,10 +97,21 @@ $roleLabel = match (strtolower((string) $role)) {
                 <strong><?= htmlspecialchars((string) $roleLabel) ?></strong>
             </div>
 
+            <!-- [DITAMBAHKAN] Menampilkan ringkasan aktivitas berdasarkan data pengguna -->
+            <div class="profile-detail-item">
+                <span>Total Peminjaman</span>
+                <strong><?= number_format($totalUserLoans) ?> Buku</strong>
+            </div>
+
+            <div class="profile-detail-item">
+                <span>Sedang Dipinjam</span>
+                <strong><?= number_format($activeUserLoans) ?> Buku</strong>
+            </div>
+
         </div>
 
         <div class="profile-actions">
-            <a href="index.php?page=dashboard" class="btn-primary">
+            <a href="index.php?page=<?= strtolower((string) $role) === 'admin' ? 'admin-dashboard' : 'dashboard' ?>" class="btn-primary">
                 Kembali ke Dashboard
             </a>
         </div>

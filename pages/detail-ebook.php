@@ -1,4 +1,3 @@
-
 <?php
 
 /**
@@ -80,7 +79,7 @@ function detailValue($value, $fallback = '-')
 
     <?php if ($selectedBook === null): ?>
 
-        <!-- BUKU TIDAK DITEMUKAN -->
+        <!-- BUKU TIDAK Ditemukan -->
 
         <section class="content-card empty-detail">
 
@@ -339,12 +338,25 @@ function detailValue($value, $fallback = '-')
 
                 </div>
 
-                <a
-                    href="index.php?page=peminjaman&id=<?= urlencode($selectedBook['id']) ?>"
-                    class="btn-primary"
-                >
-                    Pinjam E-Book
-                </a>
+                <!-- [DIUBAH] Menghubungkan tombol Pinjam E-Book ke process.php (action=borrow_ebook) dengan pilihan durasi -->
+                <?php if ((int) ($selectedBook['availableCopies'] ?? 0) > 0): ?>
+                    <form action="process.php" method="POST" style="display:flex; gap:10px; align-items:center;">
+                        <input type="hidden" name="action" value="borrow_ebook">
+                        <input type="hidden" name="ebookId" value="<?= htmlspecialchars((string) $selectedBook['id'], ENT_QUOTES, 'UTF-8') ?>">
+                        <select name="duration" aria-label="Durasi peminjaman" style="height:42px; padding:0 12px; border:1px solid var(--border); border-radius:7px; background:var(--white); color:var(--text);">
+                            <option value="3">3 Hari</option>
+                            <option value="7" selected>7 Hari</option>
+                            <option value="14">14 Hari</option>
+                        </select>
+                        <button type="submit" class="btn-primary">
+                            Pinjam E-Book
+                        </button>
+                    </form>
+                <?php else: ?>
+                    <button type="button" class="btn-primary" disabled style="opacity:0.6; cursor:not-allowed;">
+                        Stok Habis
+                    </button>
+                <?php endif; ?>
 
             </div>
 

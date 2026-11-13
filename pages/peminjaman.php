@@ -1,24 +1,11 @@
-
 <?php
-function readPeminjamanJson($filePath)
-{
-    if (!file_exists($filePath)) {
-        return [];
-    }
+// [DITAMBAHKAN] Menggunakan EbookService dan TransactionService untuk pembacaan data JSON terstruktur
+require_once __DIR__ . '/../src/autoload.php';
 
-    $content = file_get_contents($filePath);
+$ebookService       = new \App\Services\EbookService();
+$transactionService = new \App\Services\TransactionService();
 
-    if ($content === false || trim($content) === '') {
-        return [];
-    }
-
-    $data = json_decode($content, true);
-
-    return is_array($data) ? $data : [];
-}
-
-$ebooks = readPeminjamanJson(__DIR__ . '/../data/ebooks.json');
-$transactions = readPeminjamanJson(__DIR__ . '/../data/transactions.json');
+$ebooks = $ebookService->getAll();
 
 // Identitas pengguna yang sedang login
 $currentUser = $_SESSION['user'] ?? [];
@@ -33,23 +20,19 @@ foreach ($ebooks as $ebook) {
     }
 }
 
-// Mengambil transaksi milik pengguna yang sedang login
+// [DIUBAH] Mengambil transaksi milik pengguna yang sedang login melalui TransactionService
 $myLoans = [];
 
 if ($currentUserId !== null) {
+    $transactions = $transactionService->getByUserId((string) $currentUserId);
     foreach ($transactions as $transaction) {
-        if (
-            isset($transaction['userId']) &&
-            (string) $transaction['userId'] === (string) $currentUserId
-        ) {
-            $status = strtolower($transaction['status'] ?? '');
+        $status = strtolower($transaction['status'] ?? '');
 
-            if (
-                in_array($status, ['borrowed', 'dipinjam', 'active', 'aktif']) &&
-                empty($transaction['returnedAt'])
-            ) {
-                $myLoans[] = $transaction;
-            }
+        if (
+            in_array($status, ['borrowed', 'dipinjam', 'active', 'aktif']) &&
+            empty($transaction['returnedAt'])
+        ) {
+            $myLoans[] = $transaction;
         }
     }
 }
@@ -121,6 +104,8 @@ function peminjamanDate($date)
                         <th>Tanggal Pinjam</th>
                         <th>Jatuh Tempo</th>
                         <th>Status</th>
+                        <!-- [DITAMBAHKAN] Kolom aksi pengembalian E-Book -->
+                        <th>Aksi</th>
                     </tr>
                 </thead>
 
@@ -157,6 +142,17 @@ function peminjamanDate($date)
                                 <span class="status-badge status-active">
                                     Sedang Dipinjam
                                 </span>
+                            </td>
+
+                            <!-- [DITAMBAHKAN] Form tombol Kembalikan yang memanggil process.php (action=return_ebook) -->
+                            <td>
+                                <form action="process.php" method="POST" onsubmit="return confirm('Kembalikan E-Book ini sekarang?')">
+                                    <input type="hidden" name="action" value="return_ebook">
+                                    <input type="hidden" name="transactionId" value="<?= htmlspecialchars((string) ($loan['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                                    <button type="submit" class="btn-detail">
+                                        Kembalikan
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>

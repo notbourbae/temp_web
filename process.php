@@ -90,8 +90,6 @@ switch ($action) {
         redirectWithFlash('index.php?page=kelola-ebook', $res['success'], $res['message']);
         break;
 
-
-
     // --- MANAJEMEN MEMBER (ADMIN) ---
     case 'create_member':
         requireAdminAccess($authService);
@@ -111,7 +109,43 @@ switch ($action) {
             $_POST,
             (string) ($_POST['confirm_password'] ?? '')
         );
-        redirectWithFlash('index.php?page=kelola-member', $res['success'], $res['message']);
+        // [DITAMBAHKAN] Sinkronisasi data session jika akun yang diedit sedang aktif login
+        if ($res['success'] && ($_SESSION['user']['id'] ?? '') === $id) {
+            $updatedUser = $memberService->getById($id);
+            if ($updatedUser !== null) {
+                $_SESSION['user']['name']  = $updatedUser['name'];
+                $_SESSION['user']['email'] = $updatedUser['email'];
+                $_SESSION['user']['role']  = $updatedUser['role'];
+            }
+        }
+        // [DIUBAH] Jika gagal validasi, kembalikan ke form edit-member sesuai ID
+        $target = $res['success'] ? 'index.php?page=kelola-member' : 'index.php?page=edit-member&id=' . urlencode($id);
+        redirectWithFlash($target, $res['success'], $res['message']);
+        break;
+
+    // [DITAMBAHKAN] Pembaruan data profil oleh pengguna yang sedang login
+    case 'update_profile':
+        $currentUser = requireLoginAccess($authService);
+        $id = (string) $currentUser['id'];
+        $payload = [
+            'name'     => $_POST['name'] ?? '',
+            'email'    => $_POST['email'] ?? '',
+            'password' => $_POST['password'] ?? '',
+            'role'     => $currentUser['role'],
+        ];
+        $res = $memberService->updateMember(
+            $id,
+            $payload,
+            (string) ($_POST['confirm_password'] ?? '')
+        );
+        if ($res['success']) {
+            $updatedUser = $memberService->getById($id);
+            if ($updatedUser !== null) {
+                $_SESSION['user']['name']  = $updatedUser['name'];
+                $_SESSION['user']['email'] = $updatedUser['email'];
+            }
+        }
+        redirectWithFlash('index.php?page=profil', $res['success'], $res['message']);
         break;
 
     case 'delete_member':

@@ -1,77 +1,29 @@
-
 <?php
-function readAdminDashboardJson($filePath)
-{
-    if (!file_exists($filePath)) {
-        return [];
-    }
-
-    $content = file_get_contents($filePath);
-
-    if ($content === false || trim($content) === '') {
-        return [];
-    }
-
-    $data = json_decode($content, true);
-
-    return is_array($data) ? $data : [];
-}
-
-$ebooks = readAdminDashboardJson(__DIR__ . '/../../data/ebooks.json');
-$transactions = readAdminDashboardJson(__DIR__ . '/../../data/transactions.json');
+// [DIUBAH] Menggunakan EbookService dan TransactionService::getDashboardStats() untuk mengambil seluruh statistik dari JSON
 require_once __DIR__ . '/../../src/autoload.php';
-$memberService = new \App\Services\MemberService();
-$totalMembers = count($memberService->getAllMembers());
+
+$ebookService       = new \App\Services\EbookService();
+$transactionService = new \App\Services\TransactionService();
+
+$ebooks = $ebookService->getAll();
+$stats  = $transactionService->getDashboardStats();
 
 // Statistik e-book
-$totalBooks = count($ebooks);
-
+$totalBooks     = $stats['totalEbooks'];
+$totalMembers   = $stats['totalMembers'];
 $availableBooks = 0;
 
 foreach ($ebooks as $ebook) {
     $availableBooks += (int) ($ebook['availableCopies'] ?? 0);
 }
 
-// Statistik transaksi
-$totalTransactions = count($transactions);
-$activeTransactions = 0;
-$returnedTransactions = 0;
+// Statistik transaksi dari JSON
+$totalTransactions    = $stats['totalTransactions'];
+$activeTransactions   = $stats['activeLoans'];
+$returnedTransactions = $stats['returnedLoans'];
 
-foreach ($transactions as $transaction) {
-    $status = strtolower(trim($transaction['status'] ?? ''));
-
-    if (
-        in_array($status, ['borrowed', 'dipinjam', 'active', 'aktif']) &&
-        empty($transaction['returnedAt'])
-    ) {
-        $activeTransactions++;
-    }
-
-    if (
-        !empty($transaction['returnedAt']) ||
-        in_array($status, ['returned', 'dikembalikan'])
-    ) {
-        $returnedTransactions++;
-    }
-}
-
-// Pemetaan e-book berdasarkan ID
-$ebookMap = [];
-
-foreach ($ebooks as $ebook) {
-    if (isset($ebook['id'])) {
-        $ebookMap[(string) $ebook['id']] = $ebook;
-    }
-}
-
-// Mengurutkan transaksi terbaru
-$recentTransactions = $transactions;
-
-usort($recentTransactions, function ($a, $b) {
-    return strtotime($b['borrowedAt'] ?? '') <=> strtotime($a['borrowedAt'] ?? '');
-});
-
-$recentTransactions = array_slice($recentTransactions, 0, 5);
+// Transaksi terbaru sudah dilengkapi ebookTitle & userName dari TransactionService
+$recentTransactions = $stats['recentTransactions'];
 
 function adminDashboardDate($date)
 {
@@ -198,6 +150,8 @@ function adminDashboardDate($date)
                     <tr>
                         <th>No.</th>
                         <th>ID Transaksi</th>
+                        <!-- [DITAMBAHKAN] Menampilkan nama peminjam dari TransactionService -->
+                        <th>Peminjam</th>
                         <th>E-Book</th>
                         <th>Tanggal Pinjam</th>
                         <th>Status</th>
@@ -208,9 +162,6 @@ function adminDashboardDate($date)
                     <?php foreach ($recentTransactions as $index => $transaction): ?>
 
                         <?php
-                        $ebookId = (string) ($transaction['ebookId'] ?? '');
-                        $ebook = $ebookMap[$ebookId] ?? null;
-
                         $status = strtolower(trim($transaction['status'] ?? ''));
 
                         if (
@@ -244,9 +195,16 @@ function adminDashboardDate($date)
                                 ) ?>
                             </td>
 
+                            <!-- [DITAMBAHKAN] Kolom nama peminjam -->
                             <td>
                                 <?= htmlspecialchars(
-                                    $ebook['title'] ?? 'E-Book tidak ditemukan'
+                                    (string) ($transaction['userName'] ?? '-')
+                                ) ?>
+                            </td>
+
+                            <td>
+                                <?= htmlspecialchars(
+                                    (string) ($transaction['ebookTitle'] ?? 'E-Book tidak ditemukan')
                                 ) ?>
                             </td>
 

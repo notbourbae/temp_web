@@ -1,1 +1,38 @@
-[]
+[
+    {
+        "id": "TRX-001",
+        "userId": "USR-005",
+        "ebookId": "EB-002",
+        "borrowedAt": "2026-11-13",
+        "dueAt": "2026-11-27",
+        "returnedAt": "2026-11-13",
+        "status": "returned"
+    },
+    {
+        "id": "TRX-002",
+        "userId": "USR-005",
+        "ebookId": "EB-002",
+        "borrowedAt": "2026-11-13",
+        "dueAt": "2026-11-16",
+        "returnedAt": "2026-11-13",
+        "status": "returned"
+    },
+    {
+        "id": "TRX-003",
+        "userId": "USR-005",
+        "ebookId": "EB-003",
+        "borrowedAt": "2026-11-13",
+        "dueAt": "2026-11-20",
+        "returnedAt": "2026-11-13",
+        "status": "returned"
+    },
+    {
+        "id": "TRX-004",
+        "userId": "USR-005",
+        "ebookId": "EBK-001",
+        "borrowedAt": "2026-11-13",
+        "dueAt": "2026-11-20",
+        "returnedAt": "2026-11-13",
+        "status": "returned"
+    }
+]

@@ -18,13 +18,20 @@
         "name": "prabowo",
         "email": "prabowo@gmail.com",
         "password": "$2y$10$H.lScyJkTu9Q2vXVefP3yuDNh30lCRPidn23hAMJjh5PJnv5iW.62",
-        "role": "member"
+        "role": "admin"
     },
     {
         "id": "USR-004",
         "name": "lexy",
         "email": "lexy@gmail.com",
         "password": "$2y$10$Zcl3xT6wbY9tmB2MbWRy9emKQf0Gh370sKDqBb7w5UgnrVCnROvue",
+        "role": "member"
+    },
+    {
+        "id": "USR-005",
+        "name": "helmi",
+        "email": "mii@gmail.com",
+        "password": "$2y$10$y5kwCywKUm4FpcLXN4tfiehcReB.dw.QUXIpbCzTkk.tkG6wlpTb.",
         "role": "member"
     }
 ]
