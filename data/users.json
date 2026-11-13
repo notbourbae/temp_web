@@ -1,0 +1,30 @@
+[
+    {
+        "id": "USR-001",
+        "name": "brillian",
+        "email": "brillian@gmail.com",
+        "password": "$2y$10$1mdqvN8rY3d3vRDQ8cA8.e4RoBSQkmvFn.hnF8s.lRZl23XH//WkG",
+        "role": "admin"
+    },
+    {
+        "id": "USR-002",
+        "name": "ganjar",
+        "email": "ganjar@gmail.com",
+        "password": "$2y$10$hel.5M2.qmLmFPt2QYrmpebMj0pk3IB/A/1tcxW/vBi5VtbTfb0O6",
+        "role": "admin"
+    },
+    {
+        "id": "USR-003",
+        "name": "prabowo",
+        "email": "prabowo@gmail.com",
+        "password": "$2y$10$H.lScyJkTu9Q2vXVefP3yuDNh30lCRPidn23hAMJjh5PJnv5iW.62",
+        "role": "member"
+    },
+    {
+        "id": "USR-004",
+        "name": "lexy",
+        "email": "lexy@gmail.com",
+        "password": "$2y$10$Zcl3xT6wbY9tmB2MbWRy9emKQf0Gh370sKDqBb7w5UgnrVCnROvue",
+        "role": "member"
+    }
+]

@@ -1,4 +1,3 @@
-
 <?php
 require_once __DIR__ . '/../../src/autoload.php';
 
@@ -41,8 +40,7 @@ $totalMembers = count($memberService->getAllMembers());
                 type="text"
                 name="search"
                 placeholder="Cari nama atau email member..."
-                value="<?= htmlspecialchars($search) ?>"
-            >
+                value="<?= htmlspecialchars($search) ?>">
         </div>
 
         <button type="submit" class="btn-primary">Cari</button>

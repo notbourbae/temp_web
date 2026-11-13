@@ -47,9 +47,14 @@ class MemberService
         $name     = trim($data['name'] ?? '');
         $email    = strtolower(trim($data['email'] ?? ''));
         $password = (string) ($data['password'] ?? '');
+        $role     = trim($data['role'] ?? 'member');
 
         if ($name === '' || $email === '' || $password === '') {
             return ['success' => false, 'message' => 'Nama, email, dan password member wajib diisi.'];
+        }
+
+        if (!in_array($role, ['member', 'admin'], true)) {
+            return ['success' => false, 'message' => 'Role akun tidak valid.'];
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -76,13 +81,14 @@ class MemberService
             $name,
             $email,
             password_hash($password, PASSWORD_DEFAULT),
-            'member'
+            $role
         );
 
         $users[] = $member->toArray();
         JsonStorage::write($this->usersFile, $users);
 
-        return ['success' => true, 'message' => 'Member baru berhasil ditambahkan.', 'data' => $member->toArray()];
+        $accountType = $role === 'admin' ? 'Administrator' : 'Member';
+        return ['success' => true, 'message' => $accountType . ' baru berhasil ditambahkan.', 'data' => $member->toArray()];
     }
 
     public function updateMember(string $id, array $data, string $confirmPassword = ''): array
@@ -90,9 +96,14 @@ class MemberService
         $name     = trim($data['name'] ?? '');
         $email    = strtolower(trim($data['email'] ?? ''));
         $password = (string) ($data['password'] ?? '');
+        $role     = trim($data['role'] ?? 'member');
 
         if ($name === '' || $email === '') {
             return ['success' => false, 'message' => 'Nama dan email wajib diisi.'];
+        }
+
+        if (!in_array($role, ['member', 'admin'], true)) {
+            return ['success' => false, 'message' => 'Role akun tidak valid.'];
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -111,6 +122,7 @@ class MemberService
             if (($user['id'] ?? '') === $id && ($user['role'] ?? '') === 'member') {
                 $user['name']  = $name;
                 $user['email'] = $email;
+                $user['role']  = $role;
                 if ($password !== '') {
                     if (strlen($password) < 6) {
                         return ['success' => false, 'message' => 'Password baru minimal 6 karakter.'];
@@ -131,7 +143,7 @@ class MemberService
         }
 
         JsonStorage::write($this->usersFile, $users);
-        return ['success' => true, 'message' => 'Data member berhasil diperbarui.'];
+        return ['success' => true, 'message' => 'Data akun berhasil diperbarui.'];
     }
 
     public function deleteMember(string $id): array

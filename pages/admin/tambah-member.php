@@ -1,4 +1,3 @@
-
 <?php
 require_once __DIR__ . '/../../src/autoload.php';
 
@@ -23,8 +22,8 @@ function memberFormValue(string $key, ?array $member): string
 
 <section class="page-header">
     <div>
-        <h1><?= $isEditing ? 'Edit Member' : 'Tambah Member' ?></h1>
-        <p><?= $isEditing ? 'Perbarui informasi member.' : 'Tambahkan anggota baru ke dalam perpustakaan.' ?></p>
+        <h1><?= $isEditing ? 'Edit Member' : 'Tambah Member atau Administrator' ?></h1>
+        <p><?= $isEditing ? 'Perbarui informasi dan role member.' : 'Tambahkan anggota atau administrator baru ke dalam perpustakaan.' ?></p>
     </div>
 </section>
 
@@ -53,8 +52,7 @@ function memberFormValue(string $key, ?array $member): string
                     name="name"
                     placeholder="Masukkan nama lengkap"
                     value="<?= memberFormValue('name', $member) ?>"
-                    required
-                >
+                    required>
             </div>
 
             <div class="form-group">
@@ -65,8 +63,7 @@ function memberFormValue(string $key, ?array $member): string
                     name="email"
                     placeholder="contoh@email.com"
                     value="<?= memberFormValue('email', $member) ?>"
-                    required
-                >
+                    required>
             </div>
 
             <div class="form-group">
@@ -77,8 +74,7 @@ function memberFormValue(string $key, ?array $member): string
                     name="password"
                     placeholder="<?= $isEditing ? 'Kosongkan jika tidak ingin mengganti' : 'Masukkan password' ?>"
                     minlength="6"
-                    <?= $isEditing ? '' : 'required' ?>
-                >
+                    <?= $isEditing ? '' : 'required' ?>>
             </div>
 
             <div class="form-group">
@@ -89,8 +85,15 @@ function memberFormValue(string $key, ?array $member): string
                     name="confirm_password"
                     placeholder="Ulangi password"
                     minlength="6"
-                    <?= $isEditing ? '' : 'required' ?>
-                >
+                    <?= $isEditing ? '' : 'required' ?>>
+            </div>
+
+            <div class="form-group">
+                <label for="memberRole">Role</label>
+                <select id="memberRole" name="role" required>
+                    <option value="member" <?= ($member['role'] ?? 'member') === 'member' ? 'selected' : '' ?>>Member</option>
+                    <option value="admin" <?= ($member['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
+                </select>
             </div>
 
         </div>
@@ -101,7 +104,7 @@ function memberFormValue(string $key, ?array $member): string
             </a>
 
             <button type="submit" class="btn-primary">
-                <?= $isEditing ? 'Simpan Perubahan' : 'Simpan Member' ?>
+                <?= $isEditing ? 'Simpan Perubahan' : 'Simpan Akun' ?>
             </button>
         </div>
 
